@@ -6,22 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment: secrets
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Build JAR
-        run: mvn clean package -DskipTests
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli

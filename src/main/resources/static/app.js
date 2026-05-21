@@ -325,7 +325,7 @@ function appendDmMessage(msg) {
     const div       = document.createElement('div');
     div.className   = 'message ' + (isMe ? 'mine' : 'other');
     div.innerHTML   = `
-        <div class="sender">${escHtml(msg.senderDisplayName || msg.senderUsername)}</div>
+        ${makeSenderHtml(msg.senderDisplayName, msg.senderUsername, msg.senderId)}
         ${escHtml(msg.content)}
         <div class="msg-time">${formatTime(msg.createdAt)}</div>
     `;
@@ -339,6 +339,7 @@ function sendDm() {
 
     stompClient.send('/app/dm.send', {}, JSON.stringify({ recipientId: currentDmPartnerId, content }));
     input.value = '';
+    input.focus();
 }
 
 function handleDmEvent(event) {
@@ -431,6 +432,14 @@ function showChatMain(title, badgeText) {
     }
 }
 
+function makeSenderHtml(displayName, username, senderId) {
+    const isOnline = onlineUsers.has(senderId);
+    return `<div class="sender">
+        <span class="msg-online-dot${isOnline ? ' online' : ''}" data-uid="${senderId}"></span>
+        ${escHtml(displayName || username)}
+    </div>`;
+}
+
 function appendMessage(msg) {
     const container = document.getElementById('messages');
     const isMe      = currentUser && msg.senderId === currentUser.id;
@@ -440,7 +449,7 @@ function appendMessage(msg) {
     div.className = 'message' + (isSystem ? ' system' : isMe ? ' mine' : ' other');
     div.innerHTML = isSystem
         ? escHtml(msg.content)
-        : `<div class="sender">${escHtml(msg.senderDisplayName || msg.senderUsername)}</div>
+        : `${makeSenderHtml(msg.senderDisplayName, msg.senderUsername, msg.senderId)}
            ${escHtml(msg.content)}
            <div class="msg-time">${formatTime(msg.createdAt)}</div>`;
 
@@ -456,6 +465,7 @@ function sendMessage() {
 
     stompClient.send('/app/chat.send', {}, JSON.stringify({ roomId: currentRoomId, content, type: 'TEXT' }));
     input.value = '';
+    input.focus();
     sendTyping(false);
 }
 
@@ -557,6 +567,9 @@ function handlePresenceEvent(wsMsg) {
     } else {
         onlineUsers.delete(wsMsg.userId);
     }
+    document.querySelectorAll(`.msg-online-dot[data-uid="${wsMsg.userId}"]`).forEach(dot => {
+        dot.classList.toggle('online', !!wsMsg.extra);
+    });
     if (dmPartners.has(wsMsg.userId)) renderDmSidebar();
 }
 

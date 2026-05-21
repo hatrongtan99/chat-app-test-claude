@@ -8,4 +8,4 @@ target/
 *.env
 .env
 .env.local
-mvn.bat
+README.deploy.md

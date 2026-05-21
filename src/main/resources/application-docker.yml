@@ -3,4 +3,4 @@ spring:
     url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_NAME:chatapp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
   data:
     redis:
-      host: ${REDIS_HOST:redis}
+      url: ${REDIS_URL:redis://redis:6379}

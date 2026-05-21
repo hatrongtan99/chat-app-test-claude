@@ -1,5 +1,6 @@
 version: '3.8'
 
+# Local development — includes Nginx load balancer
 services:
   mysql:
     image: mysql:8.0

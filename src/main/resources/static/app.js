@@ -6,6 +6,55 @@ let isRegister = false;
 let typingTimer = null;
 let currentUser = null;
 
+// ── Notifications ──
+let audioCtx = null;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+
+function playNotificationSound() {
+    try {
+        const ctx  = getAudioCtx();
+        const t    = ctx.currentTime;
+
+        // FB Messenger-style: two soft sine pings (C6 → E6)
+        [[1046.5, 0], [1318.5, 0.1]].forEach(([freq, offset]) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, t + offset);
+            gain.gain.linearRampToValueAtTime(0.8, t + offset + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.4);
+            osc.start(t + offset);
+            osc.stop(t + offset + 0.4);
+        });
+    } catch (_) {}
+}
+
+function showBrowserNotification(title, body) {
+    if (document.visibilityState === 'visible') return;
+    if (Notification.permission !== 'granted') return;
+    const n = new Notification(title, { body, silent: true });
+    n.onclick = () => { window.focus(); n.close(); };
+    setTimeout(() => n.close(), 5000);
+}
+
+function notify(title, body) {
+    playNotificationSound();
+    showBrowserNotification(title, body);
+}
+
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
 let reconnectAttempts = 0;
 let reconnectTimer = null;
 const WS_MAX_DELAY = 30000;
@@ -145,6 +194,7 @@ async function loadApp() {
     }
 
     currentUser = meRes.data;
+    requestNotificationPermission();
     document.getElementById('user-display').textContent  = currentUser.displayName || currentUser.username;
     document.getElementById('auth-section').style.display = 'none';
     document.getElementById('app-section').style.display  = 'flex';
@@ -356,6 +406,8 @@ function handleDmEvent(event) {
     }
 
     const isActiveConversation = currentMode === 'dm' && currentDmPartnerId === partnerId;
+
+    if (!isMe) notify(`💬 ${partnerUsername}`, msg.content);
 
     if (isActiveConversation) {
         appendDmMessage(msg);
@@ -596,6 +648,10 @@ function handleRoomMessage(wsMsg) {
             if (wsMsg.roomId === currentRoomId) {
                 appendMessage(wsMsg.message);
                 scrollToBottom();
+            }
+            if (wsMsg.eventType === 'CHAT_MESSAGE' && wsMsg.message?.senderId !== currentUser?.id) {
+                const sender = wsMsg.message?.senderDisplayName || wsMsg.message?.senderUsername || 'Someone';
+                notify(`#${wsMsg.roomName || wsMsg.roomId} — ${sender}`, wsMsg.message?.content || '');
             }
             break;
 

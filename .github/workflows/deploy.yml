@@ -19,7 +19,7 @@ jobs:
           cache: maven
 
       - name: Build JAR
-        run: ./mvnw clean package -DskipTests
+        run: mvn clean package -DskipTests
 
       # Railway builds the Dockerfile itself — no Nginx needed,
       # Railway's proxy handles routing and TLS termination.

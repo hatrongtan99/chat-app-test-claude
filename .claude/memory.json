@@ -1,0 +1,21 @@
+{
+  "project": "AI Chat Backend",
+  "stack": "Java 21 + Spring Boot 3.5.x + WebSocket/STOMP + Redis + MySQL",
+  "last_updated": "2026-05-19",
+  "sessions": [
+    {
+      "date": "2026-05-19",
+      "summary": "Q&A về STOMP destinations. Implement disconnect client khi JWT invalid trong WebSocketConfig ChannelInterceptor — throw MessageDeliveryException thay vì silent ignore.",
+      "changes": [
+        "WebSocketConfig.java: CONNECT frame nay throw MessageDeliveryException nếu thiếu hoặc sai JWT token"
+      ]
+    }
+  ],
+  "pending": [],
+  "key_decisions": [
+    "SimpleBroker nên /topic và /queue chỉ là convention, có thể đặt tên khác",
+    "setUserDestinationPrefix('/user') là prefix toàn cụm, không phải chỉ cho /queue",
+    "convertAndSendToUser() map username → tất cả session của user đó (multi-tab support)",
+    "MessageDeliveryException trong ChannelInterceptor.preSend() → Spring gửi STOMP ERROR frame rồi đóng connection"
+  ]
+}

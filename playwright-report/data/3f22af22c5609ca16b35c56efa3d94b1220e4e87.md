@@ -1,0 +1,91 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: chat.spec.ts >> Chat rooms >> tạo phòng mới
+- Location: e2e\chat.spec.ts:25:7
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  locator('#app-section')
+Expected: visible
+Received: hidden
+Timeout:  5000ms
+
+Call log:
+  - Expect "toBeVisible" with timeout 5000ms
+  - waiting for locator('#app-section')
+    14 × locator resolved to <div id="app-section">…</div>
+       - unexpected value "hidden"
+
+```
+
+```yaml
+- heading "Login" [level=2]
+- text: Invalid username or password
+- textbox "Username": testuser
+- textbox "Password": password123
+- button "Login"
+- text: Don't have an account? Register
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect, Page } from '@playwright/test';
+  2  | 
+  3  | async function login(page: Page, username = 'testuser', password = 'password123') {
+  4  |   await page.goto('/');
+  5  |   await page.locator('#username').fill(username);
+  6  |   await page.locator('#password').fill(password);
+  7  |   await page.locator('#auth-btn').click();
+> 8  |   await expect(page.locator('#app-section')).toBeVisible({ timeout: 5000 });
+     |                                              ^ Error: expect(locator).toBeVisible() failed
+  9  | }
+  10 | 
+  11 | test.describe('Chat rooms', () => {
+  12 |   test.beforeEach(async ({ page }) => {
+  13 |     await login(page);
+  14 |   });
+  15 | 
+  16 |   test('hiển thị tab Rooms mặc định', async ({ page }) => {
+  17 |     await expect(page.locator('#tab-btn-rooms')).toHaveClass(/active/);
+  18 |   });
+  19 | 
+  20 |   test('chuyển sang tab DMs', async ({ page }) => {
+  21 |     await page.locator('#tab-btn-dms').click();
+  22 |     await expect(page.locator('#tab-btn-dms')).toHaveClass(/active/);
+  23 |   });
+  24 | 
+  25 |   test('tạo phòng mới', async ({ page }) => {
+  26 |     page.on('dialog', dialog => dialog.accept('Test Room'));
+  27 |     await page.locator('#new-room-btn').click();
+  28 |     // Chờ room mới xuất hiện trong list
+  29 |     await expect(page.locator('.room-item').filter({ hasText: 'Test Room' })).toBeVisible({ timeout: 5000 });
+  30 |   });
+  31 | 
+  32 |   test('gửi tin nhắn trong phòng', async ({ page }) => {
+  33 |     // Click vào room đầu tiên
+  34 |     await page.locator('.room-item').first().click();
+  35 |     await expect(page.locator('#message-input')).toBeVisible();
+  36 | 
+  37 |     await page.locator('#message-input').fill('Hello Playwright!');
+  38 |     await page.locator('#send-btn').click();
+  39 | 
+  40 |     await expect(page.locator('#message-input')).toHaveValue('');
+  41 |   });
+  42 | 
+  43 |   test('logout thành công', async ({ page }) => {
+  44 |     await page.locator('#logout-btn').click();
+  45 |     await expect(page.locator('#auth-section')).toBeVisible({ timeout: 3000 });
+  46 |   });
+  47 | });
+  48 | 
+```

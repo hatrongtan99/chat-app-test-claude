@@ -1,0 +1,34 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -File \"d:\\AI\\chat\\.claude\\format-java.ps1\"",
+            "shell": "powershell",
+            "timeout": 30,
+            "statusMessage": "Formatting Java..."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"d:/AI/chat/.claude/plans\")",
+      "Bash(mkdir -p \"d:\\\\AI\\\\chat\\\\.claude\\\\plans\")",
+      "WebSearch",
+      "Bash(not exist *)",
+      "Bash(mkdir -p \"d:/AI/chat/.claude/commands\")",
+      "Bash(./mvnw.cmd compile *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\AI\\\\chat\\\\src\\\\main\\\\resources\\\\db\\\\migration\" -File)",
+      "Bash(Select-Object FullName, Name)"
+    ],
+    "additionalDirectories": [
+      "d:\\AI\\chat\\.claude",
+      "d:\\AI\\chat\\.claude\\plans"
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; background: #f0f2f5; }
+
+        /* ── Auth ── */
+        #auth-section { max-width: 400px; margin: 80px auto; background: #fff; padding: 32px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+        #auth-section h2 { margin-bottom: 16px; color: #333; }
+        #auth-section input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        #auth-section button { width: 100%; padding: 10px; background: #1877f2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        #auth-section button:hover { background: #166fe5; }
+        #auth-toggle { text-align: center; margin-top: 12px; font-size: 13px; color: #555; cursor: pointer; }
+        #auth-toggle span { color: #1877f2; }
+        #error-msg { color: #e74c3c; font-size: 13px; margin-bottom: 8px; }
+
+        /* ── App layout ── */
+        #app-section { display: none; flex: 1; flex-direction: row; overflow: hidden; }
+
+        /* ── Sidebar ── */
+        #sidebar { width: 260px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
+        #sidebar-header { padding: 12px 16px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        #sidebar-header h3 { font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+        #logout-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+
+        /* Tabs */
+        #sidebar-tabs { display: flex; border-bottom: 1px solid #e0e0e0; }
+        .tab-btn { flex: 1; padding: 9px 0; font-size: 13px; font-weight: 600; background: none; border: none; cursor: pointer; color: #888; position: relative; transition: color 0.15s; }
+        .tab-btn.active { color: #1877f2; border-bottom: 2px solid #1877f2; }
+        .tab-btn:hover:not(.active) { color: #555; }
+        .tab-badge { display: inline-block; background: #e74c3c; color: #fff; border-radius: 8px; font-size: 10px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; }
+
+        /* Tab content panels */
+        .tab-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .tab-panel.hidden { display: none; }
+
+        /* Room list */
+        #new-room-btn { margin: 10px 12px 4px; padding: 7px; background: #1877f2; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+        .room-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .room-item:hover, .room-item.active { background: #e8f0fe; }
+        .room-item .item-name { font-weight: bold; color: #333; }
+        .room-item .item-meta { font-size: 11px; color: #888; margin-top: 2px; }
+
+        /* DM list */
+        #dm-new-area { padding: 10px 12px 4px; display: flex; gap: 6px; flex-shrink: 0; position: relative; }
+        #dm-user-search-input { flex: 1; padding: 7px 9px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        #dm-hint { padding: 0 12px 6px; font-size: 11px; color: #aaa; flex-shrink: 0; }
+        #dm-search-results { position: absolute; top: calc(100% - 4px); left: 12px; right: 12px; background: #fff; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: none; }
+        .dm-search-item { padding: 9px 12px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f0f0; }
+        .dm-search-item:last-child { border-bottom: none; }
+        .dm-search-item:hover { background: #e8f0fe; }
+        .dm-search-avatar { width: 28px; height: 28px; border-radius: 50%; background: #1877f2; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+        .dm-search-info { flex: 1; min-width: 0; }
+        .dm-search-name { font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dm-search-sub { font-size: 11px; color: #888; }
+        .dm-search-empty { padding: 12px; text-align: center; color: #aaa; font-size: 13px; }
+        .dm-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; }
+        .dm-item:hover, .dm-item.active { background: #e8f0fe; }
+        .dm-avatar { width: 34px; height: 34px; border-radius: 50%; background: #1877f2; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+        .dm-info { flex: 1; min-width: 0; }
+        .dm-info .item-name { font-weight: bold; color: #333; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dm-info .item-meta { font-size: 11px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .dm-unread { width: 8px; height: 8px; border-radius: 50%; background: #e74c3c; flex-shrink: 0; }
+
+        /* ── Chat area ── */
+        #chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        #chat-header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 10px; }
+        #chat-header-title { font-size: 15px; font-weight: bold; color: #333; flex: 1; }
+        #chat-header-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e8f0fe; color: #1877f2; font-weight: 600; }
+        #messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .message { max-width: 70%; padding: 8px 12px; border-radius: 8px; font-size: 14px; line-height: 1.4; }
+        .message.mine { align-self: flex-end; background: #1877f2; color: #fff; }
+        .message.other { align-self: flex-start; background: #fff; border: 1px solid #e0e0e0; color: #333; }
+        .message.system { align-self: center; background: #f0f0f0; color: #888; font-size: 12px; font-style: italic; }
+        .message .sender { font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+        .message.mine .sender { display: none; }
+        .message .msg-time { font-size: 10px; color: #aaa; margin-top: 4px; text-align: right; }
+        .message.mine .msg-time { color: rgba(255,255,255,0.65); }
+        .message.other .msg-time { color: #aaa; }
+        #typing-indicator { padding: 4px 20px; font-size: 12px; color: #888; height: 20px; }
+        #input-area { padding: 12px 16px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; }
+        #message-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; font-size: 14px; outline: none; }
+        #message-input:focus { border-color: #1877f2; }
+        #send-btn { padding: 10px 20px; background: #1877f2; color: #fff; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        #send-btn:hover { background: #166fe5; }
+        #no-room { flex: 1; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 15px; }
+
+        /* ── WS status banner ── */
+        .ws-status { font-size: 11px; padding: 3px 12px; text-align: center; min-height: 0; transition: all 0.2s; }
+        .ws-status.disconnected { background: #f8d7da; color: #842029; }
+        .ws-status.reconnecting { background: #fff3cd; color: #856404; }
+
+        /* ── Presence dots ── */
+        .presence-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #9ca3af; }
+        .presence-dot.online { background: #22c55e; }
+        #user-info { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+        .dm-avatar-wrap { position: relative; flex-shrink: 0; }
+        .dm-presence { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: #9ca3af; }
+        .dm-presence.online { background: #22c55e; }
+    </style>
+</head>
+<body>
+
+<!-- Auth Section -->
+<div id="auth-section">
+    <h2 id="auth-title">Login</h2>
+    <div id="error-msg"></div>
+    <input type="text" id="username" placeholder="Username">
+    <input type="email" id="email" placeholder="Email" style="display:none">
+    <input type="password" id="password" placeholder="Password">
+    <button id="auth-btn" onclick="doAuth()">Login</button>
+    <div id="auth-toggle">Don't have an account? <span onclick="toggleAuth()">Register</span></div>
+</div>
+
+<!-- App Section -->
+<div id="app-section">
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <div id="user-info">
+                <span id="user-dot" class="presence-dot"></span>
+                <h3 id="user-display">Chat App</h3>
+            </div>
+            <button id="logout-btn" onclick="doLogout()">Logout</button>
+        </div>
+
+        <!-- WS connection status -->
+        <div id="ws-status" class="ws-status"></div>
+
+        <!-- Tab buttons -->
+        <div id="sidebar-tabs">
+            <button class="tab-btn active" id="tab-btn-rooms" onclick="showTab('rooms')">Rooms</button>
+            <button class="tab-btn" id="tab-btn-dms" onclick="showTab('dms')">
+                Messages<span id="dm-badge" class="tab-badge" style="display:none">0</span>
+            </button>
+        </div>
+
+        <!-- Rooms tab -->
+        <div id="tab-panel-rooms" class="tab-panel">
+            <button id="new-room-btn" onclick="createRoom()">+ New Room</button>
+            <div id="room-list"></div>
+        </div>
+
+        <!-- DMs tab -->
+        <div id="tab-panel-dms" class="tab-panel hidden">
+            <div id="dm-new-area">
+                <input type="text" id="dm-user-search-input" placeholder="Search users…" autocomplete="off"
+                       oninput="onDmSearchInput()" onblur="hideDmSearch()" onfocus="onDmSearchInput()">
+                <div id="dm-search-results"></div>
+            </div>
+            <div id="dm-hint">Search by username to start a conversation.</div>
+            <div id="dm-list"></div>
+        </div>
+    </div>
+
+    <div id="chat-area">
+        <div id="no-room">Select a room or start a direct message</div>
+        <div id="chat-main" style="display:none; flex:1; flex-direction:column;">
+            <div id="chat-header">
+                <span id="chat-header-title">Room</span>
+                <span id="chat-header-badge" style="display:none"></span>
+            </div>
+            <div id="messages"></div>
+            <div id="typing-indicator"></div>
+            <div id="input-area">
+                <input type="text" id="message-input" placeholder="Type a message…"
+                       onkeypress="onKeyPress(event)" oninput="onTyping()">
+                <button id="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
